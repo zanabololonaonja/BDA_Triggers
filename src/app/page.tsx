@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Sidebar from "./components/Sidebar";
+import { FaUser, FaWallet, FaCoins } from "react-icons/fa";
+import { useRouter } from 'next/navigation';
 
 interface Compte {
   num_compte: number;
@@ -13,7 +16,10 @@ export default function UserPage() {
   const [solde, setSolde] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [comptes, setComptes] = useState<Compte[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  // const [editingId, setEditingId] = useState<number | null>(null);
+  // const [showModal, setShowModal] = useState(false);
+  // const [modalNom, setModalNom] = useState("");
+  // const [modalSolde, setModalSolde] = useState("");
 
   // Charger tous les comptes
   const chargerComptes = async () => {
@@ -30,32 +36,29 @@ export default function UserPage() {
     chargerComptes();
   }, []);
 
+  const router = useRouter();
   const sauvegarderCompte = async () => {
     if (!nomclient || !solde) {
       setMessage("Veuillez remplir tous les champs !");
       return;
     }
-
     try {
-      const method = editingId ? "PUT" : "POST";
-      const body = editingId
-        ? { num_compte: editingId, nomclient, solde: parseFloat(solde) }
-        : { nomclient, solde: parseFloat(solde) };
-
       const res = await fetch("/api/comptes", {
-        method,
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ nomclient, solde: parseFloat(solde) }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        setMessage(editingId ? "Compte modifié !" : "Compte ajouté !");
-        setNomclient("");
-        setSolde("");
-        setEditingId(null);
-        chargerComptes();
+        setMessage("Compte ajouté !");
+
+        // On attend un tout petit peu pour que l'utilisateur voit le message de succès
+        setTimeout(() => {
+          router.push('/liste'); // Remplace '/liste' par le bon chemin vers ta page
+        }, 1500);
+
       } else {
         setMessage(data.error || "Erreur serveur");
       }
@@ -65,105 +68,63 @@ export default function UserPage() {
     }
   };
 
-  const modifierCompte = (c: Compte) => {
-    setNomclient(c.nomclient);
-    setSolde(c.solde.toString());
-    setEditingId(c.num_compte);
-  };
-
-  const supprimerCompte = async (id: number) => {
-    if (!confirm("Voulez-vous vraiment supprimer ce compte ?")) return;
-    try {
-      const res = await fetch("/api/comptes", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ num_compte: id }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setMessage("Compte supprimé !");
-        chargerComptes();
-      } else {
-        setMessage(data.error || "Erreur lors de la suppression");
-      }
-    } catch (err) {
-      console.error(err);
-      setMessage("Erreur serveur");
-    }
-  };
-
   return (
-    <div className="p-10">
-      {/* 🔹 Barre de navigation fixe en haut */}
-      <nav className="fixed top-0 left-0 right-0 bg-gray-800 text-white flex justify-start gap-4 px-6 py-3 shadow-md z-50">
-        <a href="/" className="hover:underline">
-          Utilisateur
-        </a>
-        <a href="/admin" className="hover:underline">
-          Admin / Audit
-        </a>
-      </nav>
+    <div className="flex min-h-screen bg-[#fdf2f8]">
+      <Sidebar />
 
-      {/* Ajouter un padding top pour que le contenu ne soit pas caché par la nav */}
-      <div className="pt-16">
-        <h1 className="text-2xl font-bold mb-6">
-          Fenêtre Utilisateur - Gestion des Comptes
-        </h1>
+      <div className="flex-1 ml-56 p-10 pt-20 flex flex-col items-center justify-center">
 
-        <div className="space-y-4 max-w-md mb-10">
-          <input
-            type="text"
-            placeholder="Nom du client"
-            value={nomclient}
-            onChange={(e) => setNomclient(e.target.value)}
-            className="border p-2 w-full"
-          />
 
-          <input
-            type="number"
-            placeholder="Solde"
-            value={solde}
-            onChange={(e) => setSolde(e.target.value)}
-            className="border p-2 w-full"
-          />
+        {/* Form Container */}
+        <div className="w-full max-w-md bg-white/60 backdrop-blur-sm p-8 rounded-3xl shadow-sm border border-pink-100 relative overflow-hidden">
+          {/* Subtle shapes mimicking the image but localized to the form card */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-pink-300 to-pink-500 rounded-bl-full z-0 opacity-20"></div>
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-tr from-pink-300 to-pink-500 rounded-full z-0 opacity-20"></div>
 
-          <button
-            onClick={sauvegarderCompte}
-            className="bg-blue-600 text-white px-4 py-2"
-          >
-            {editingId ? "Modifier" : "Ajouter"}
-          </button>
+          <div className="relative z-10">
+            <h2 className="text-xl font-bold mb-6 text-pink-900 text-center">
+              Ajouter un Compte
+            </h2>
 
-          {message && <p className="mt-4 text-red-600">{message}</p>}
-        </div>
-
-        <h2 className="text-xl font-semibold mb-4">Liste des comptes</h2>
-        <ul className="space-y-2 max-w-md">
-          {comptes.map((c) => (
-            <li
-              key={c.num_compte}
-              className="border p-2 flex justify-between items-center"
-            >
-              <span>
-                {c.nomclient} - {c.solde.toLocaleString()} Ar
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => modifierCompte(c)}
-                  className="bg-yellow-500 text-white px-2 py-1"
-                >
-                  Modifier
-                </button>
-                <button
-                  onClick={() => supprimerCompte(c.num_compte)}
-                  className="bg-red-500 text-white px-2 py-1"
-                >
-                  Supprimer
-                </button>
+            <div className="space-y-6">
+              <div className="flex items-center bg-white shadow-[0_4px_20px_rgb(0,0,0,0.05)] rounded-full px-6 py-4 border border-gray-50">
+                <FaUser className="text-pink-600 text-xl flex-shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Nom du client"
+                  value={nomclient}
+                  onChange={(e) => setNomclient(e.target.value)}
+                  className="flex-1 ml-4 outline-none text-gray-700 bg-transparent font-medium placeholder-gray-400"
+                />
               </div>
-            </li>
-          ))}
-        </ul>
+
+              <div className="flex items-center bg-white shadow-[0_4px_20px_rgb(0,0,0,0.05)] rounded-full px-6 py-4 border border-gray-50 relative">
+                <FaWallet className="text-pink-600 text-xl flex-shrink-0" />
+                <input
+                  type="number"
+                  placeholder="Solde"
+                  value={solde}
+                  onChange={(e) => setSolde(e.target.value)}
+                  className="flex-1 ml-4 outline-none text-gray-700 bg-transparent font-medium placeholder-gray-400 pl-2 pr-6"
+                />
+                <FaCoins className="text-pink-400 text-lg absolute right-6" />
+              </div>
+
+              <button
+                onClick={sauvegarderCompte}
+                className="w-full bg-gradient-to-r from-pink-500 to-pink-700 hover:from-pink-600 hover:to-pink-800 text-white font-bold rounded-full py-4 mt-8 shadow-md transition-all hover:-translate-y-1 hover:shadow-lg"
+              >
+                AJOUTER
+              </button>
+            </div>
+
+            {message && (
+              <p className="mt-6 text-center text-pink-600 font-semibold bg-white rounded-lg py-2 shadow-sm border border-pink-100">
+                {message}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
