@@ -14,4 +14,5 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+<img width="1253" height="644" alt="BDATriggers1" src="https://github.com/user-attachments/assets/8120feab-f51a-4a93-9d75-7c4be36fc900" />
 
